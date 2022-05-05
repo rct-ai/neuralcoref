@@ -56,7 +56,7 @@ class AllResource(object):
 
     def on_post(self, req, resp):
         self.response = {}
-        text_param = req.get_json()['text']
+        text_param = json.load(req.bounded_stream)['text']
         text = ",".join(text_param) if isinstance(text_param, list) else text_param
         text = unicode_(text)
         doc = self.nlp(text)
