@@ -8,7 +8,7 @@ from wsgiref.simple_server import make_server
 import falcon
 import spacy
 import neuralcoref
-
+# from neuralcoref import add_to_pipe
 # Python 3
 unicode_ = str
 
@@ -54,6 +54,36 @@ class AllResource(object):
         resp.append_header("Access-Control-Allow-Origin", "*")
         resp.status = falcon.HTTP_200
 
+    def on_post(self, req, resp):
+        self.response = {}
+        text_param = req.get_json()['text']
+        text = ",".join(text_param) if isinstance(text_param, list) else text_param
+        text = unicode_(text)
+        doc = self.nlp(text)
+        if doc._.has_coref:
+            mentions = [
+                {
+                    "start": mention.start_char,
+                    "end": mention.end_char,
+                    "text": mention.text,
+                    "resolved": cluster.main.text,
+                }
+                for cluster in doc._.coref_clusters
+                for mention in cluster.mentions
+            ]
+            clusters = list(
+                list(span.text for span in cluster)
+                for cluster in doc._.coref_clusters
+            )
+            resolved = doc._.coref_resolved
+            self.response["mentions"] = mentions
+            self.response["clusters"] = clusters
+            self.response["resolved"] = resolved
+
+        resp.body = json.dumps(self.response)
+        resp.content_type = "application/json"
+        resp.append_header("Access-Control-Allow-Origin", "*")
+        resp.status = falcon.HTTP_200
 
 if __name__ == "__main__":
     RESSOURCE = AllResource()
